@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Leave One Group Out/Leave P Groups Out CV</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/solarized.css">
+  <style>
+    body { background-color: #fdf6e3; }
+    h1, h2, h3, p, li { color: #073642; }
+    img { max-width: 90%; height: auto; display: block; margin: 0.1em auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    table { font-size: 0.75em; }
+    th, td { padding: 4px 6px; }
+    .fragment-highlight { background: #eee8d5; padding: 5px; border-radius: 5px; }
+    canvas { margin-top: 20px; }
+    .math { font-family: 'Courier New', monospace; background: #eee8d5; padding: 0.2em 0.5em; border-radius: 4px; display: inline-block; }
+  </style>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h1>Leave One Group Out / Leave P Groups Out</h1>
+        <p>Cross-Validation Strategy</p>
+        <p><small>Group Homework Presentation by Eren Güler, Lukas Glantschnig and Ogün Yilmaz</small></p>
+      </section>
+      <section>
+        <h2>What is Grouped CV?</h2>
+        <ul>
+          <li class="fragment">Used when data has grouped observations (e.g., per subject, device, location)</li>
+          <li class="fragment">Ensures all data from the same group is in either training or testing set</li>
+          <li class="fragment">Avoids data leakage and overly optimistic performance</li>
+        </ul>
+        <img src="https://scikit-learn.org/stable/_images/sphx_glr_plot_cv_indices_003.png"
+     alt="Grouped CV vs Standard CV"
+     style="display: block; margin: -1em 0 0 auto; max-width: 90%; max-height: 65vh; height: auto;">
+
+
+
+      </section>
+      <section>
+        <h2>Why Not Regular K-Fold?</h2>
+        <ul>
+          <li class="fragment">Random splitting ignores underlying group structure</li>
+          <li class="fragment">May lead to same group's data appearing in both train and test</li>
+          <li class="fragment">This violates i.i.d. assumptions and inflates performance</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Real-World Example</h2>
+        <ul>
+          <li>Sensor data from wearables on different people</li>
+          <li>Images of buildings taken by different drones</li>
+          <li>Financial transactions grouped by customer ID</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Mathematical Formulation</h2>
+        <p>We define the split by group label:</p>
+        <p class="math">\( \text{Train set} = \{x_i \mid g_i \ne g_k\} \)</p>
+        <p class="math">\( \text{Test set} = \{x_i \mid g_i = g_k\} \)</p>
+        <p>This ensures no data from group \( g_k \) leaks into training.</p>
+      </section>
+
+       <section>
+        <h2>Combinatorics in LPGO</h2>
+        <p>The number of unique P-group splits from G groups is:</p>
+        <p class="math">\( \binom{G}{P} = \frac{G!}{P!(G - P)!} \)</p>
+        <p>Example: \( \binom{6}{2} = 15 \) possible test group pairs</p>
+      </section>
+      
+      <section>
+        <h2>CV Techniques Comparison</h2>
+        <table>
+          <thead>
+            <tr><th>Method</th><th>Grouped?</th><th>Bias</th><th>Variance</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>K-Fold</td><td>No</td><td>Low</td><td>Moderate</td><td>Risk of leakage if groups exist</td></tr>
+            <tr><td>Stratified K-Fold</td><td>No</td><td>Low</td><td>Moderate</td><td>Preserves class ratio</td></tr>
+            <tr><td>Group K-Fold</td><td>Yes</td><td>Low</td><td>Moderate</td><td>Splits based on group labels</td></tr>
+            <tr><td>Leave-One-Out</td><td>No</td><td>Very Low</td><td>Very High</td><td>One sample left out</td></tr>
+            <tr><td>Leave-One-Group-Out</td><td>Yes</td><td>Low</td><td>High</td><td>One group left out</td></tr>
+            <tr><td>Leave-P-Groups-Out</td><td>Yes</td><td>Low</td><td>Moderate</td><td>P groups left out</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+       <section>
+        <h2>When to Use LOGO vs LPGO</h2>
+        <table>
+          <thead>
+            <tr><th>Scenario</th><th>Suggested Method</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Few large groups</td><td>LOGO</td></tr>
+            <tr><td>Many small groups</td><td>LPGO (e.g., p=2)</td></tr>
+            <tr><td>Want bigger test set per fold</td><td>LPGO</td></tr>
+            <tr><td>Highly uneven group sizes</td><td>Custom strategy</td></tr>
+          </tbody>
+        </table>
+      </section>
+      
+      <section>
+        <h2>Leave-One-Group-Out Animation</h2>
+        <p>Each square is a group. The <b>red</b> square is the <b>test group</b>.</p>
+        <canvas id="logoCanvas" width="600" height="200"></canvas>
+      </section>
+      <section>
+        <h2>Leave-P-Groups-Out Animation</h2>
+        <p><b>Two red squares</b> are test groups. All combinations are animated.</p>
+        <canvas id="lpgoCanvas" width="600" height="200"></canvas>
+      </section>
+      <section>
+        <h2>Code: LeaveOneGroupOut</h2>
+        <pre><code class="language-python">from sklearn.model_selection import LeaveOneGroupOut
+
+X = [[1], [2], [3], [4], [5], [6]]
+y = [0, 0, 1, 1, 2, 2]
+groups = [1, 1, 2, 2, 3, 3]
+
+logo = LeaveOneGroupOut()
+for train, test in logo.split(X, y, groups):
+    print("TRAIN:", train, "TEST:", test)</code></pre>
+      </section>
+      <section>
+        <h2>Code: LeavePGroupsOut</h2>
+        <pre><code class="language-python">from sklearn.model_selection import LeavePGroupsOut
+
+lpgo = LeavePGroupsOut(n_groups=2)
+for train, test in lpgo.split(X, y, groups):
+    print("TRAIN:", train, "TEST:", test)</code></pre>
+      </section>
+      <section>
+        <h2>Simple NumPy Implementation</h2>
+        <pre><code class="language-python">import numpy as np
+
+groups = np.array([1, 1, 2, 2, 3, 3])
+for g in np.unique(groups):
+    test = np.where(groups == g)[0]
+    train = np.where(groups != g)[0]
+    print(f"Group {g}: Train {train}, Test {test}")</code></pre>
+      </section>
+      <section>
+        <h2>Limitations of LOGO/LPGO</h2>
+        <ul>
+          <li>Requires many distinct groups to work well</li>
+          <li>Unbalanced group sizes can skew evaluation</li>
+          <li>Training size may vary significantly per fold</li>
+          <li>Can be computationally expensive</li>
+        </ul>
+      </section>
+     
+      <section>
+        <h2>Summary</h2>
+        <ul>
+          <li>Grouped CV avoids data leakage</li>
+          <li>LOGO for simple group exclusion</li>
+          <li>LPGO for more flexibility and evaluation</li>
+        </ul>
+        <p class="fragment">Thank you for your attention!</p>
+      </section>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/highlight/highlight.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      plugins: [ RevealHighlight ],
+      highlight: { highlightOnLoad: true }
+    });
+
+    const logoCanvas = document.getElementById("logoCanvas");
+    if (logoCanvas) {
+      const ctx = logoCanvas.getContext("2d");
+      const groups = ["A", "B", "C", "D"];
+      let frame = 0;
+      function drawLogoStep() {
+        ctx.clearRect(0, 0, logoCanvas.width, logoCanvas.height);
+        groups.forEach((group, i) => {
+          ctx.fillStyle = (i === frame) ? "#dc322f" : "#2aa198";
+          ctx.fillRect(60 + i * 120, 60, 80, 80);
+          ctx.fillStyle = "white";
+          ctx.font = "20px sans-serif";
+          ctx.fillText(group, 90 + i * 120, 110);
+        });
+        frame = (frame + 1) % groups.length;
+      }
+      setInterval(drawLogoStep, 1000);
+    }
+
+    const lpgoCanvas = document.getElementById("lpgoCanvas");
+    if (lpgoCanvas) {
+      const ctx = lpgoCanvas.getContext("2d");
+      const groups = ["A", "B", "C", "D", "E", "F"];
+      let frame = 0;
+      const combinations = [];
+      for (let i = 0; i < groups.length; i++) {
+        for (let j = i + 1; j < groups.length; j++) {
+          combinations.push([i, j]);
+        }
+      }
+      function drawLpgoStep() {
+        ctx.clearRect(0, 0, lpgoCanvas.width, lpgoCanvas.height);
+        const [a, b] = combinations[frame % combinations.length];
+        groups.forEach((group, i) => {
+          const test = (i === a || i === b);
+          ctx.fillStyle = test ? "#cb4b16" : "#268bd2";
+          ctx.fillRect(30 + i * 90, 60, 60, 60);
+          ctx.fillStyle = "white";
+          ctx.font = "20px sans-serif";
+          ctx.fillText(group, 50 + i * 90, 100);
+        });
+        frame++;
+      }
+      let lpgoInterval = null;
+      Reveal.on('slidechanged', event => {
+        const currentSlide = event.currentSlide;
+        if (currentSlide.querySelector('#lpgoCanvas')) {
+          if (!lpgoInterval) {
+            lpgoInterval = setInterval(drawLpgoStep, 1200);
+          }
+        } else {
+          clearInterval(lpgoInterval);
+          lpgoInterval = null;
+        }
+      });
+    }
+  </script>
+</body>
+</html>
